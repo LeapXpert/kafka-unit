@@ -45,7 +45,7 @@ public class KafkaIntegrationTest extends KafkaUnitRuleIntegrationTestBase {
         Field f = kafkaUnitServer.getClass().getDeclaredField("broker");
         f.setAccessible(true);
         KafkaServerStartable broker = (KafkaServerStartable) f.get(kafkaUnitServer);
-        assertEquals(1024, (int) broker.serverConfig().logSegmentBytes());
+        assertEquals(1024, (int) broker.staticServerConfig().logSegmentBytes());
         kafkaUnitServer.deleteAllTopics();
         kafkaUnitServer.shutdown();
     }

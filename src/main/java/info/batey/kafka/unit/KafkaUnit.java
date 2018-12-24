@@ -30,6 +30,7 @@ import kafka.admin.TopicCommand;
 import kafka.server.KafkaConfig;
 import kafka.server.KafkaServerStartable;
 import kafka.utils.ZkUtils;
+import kafka.zk.KafkaZkClient;
 import org.apache.commons.io.FileUtils;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -40,6 +41,7 @@ import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.security.JaasUtils;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
+import org.apache.kafka.common.utils.Time;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.Console;
@@ -143,7 +145,7 @@ public class KafkaUnit {
         kafkaBrokerConfig.setProperty("log.flush.interval.messages", String.valueOf(1));
         kafkaBrokerConfig.setProperty("delete.topic.enable", String.valueOf(true));
         kafkaBrokerConfig.setProperty("offsets.topic.replication.factor", String.valueOf(1));
-        kafkaBrokerConfig.setProperty("auto.create.topics.enable", String.valueOf(false));
+        kafkaBrokerConfig.setProperty("auto.create.topics.enable", String.valueOf(true));
 
         broker = new KafkaServerStartable(new KafkaConfig(kafkaBrokerConfig));
         broker.startup();
@@ -195,14 +197,15 @@ public class KafkaUnit {
         arguments[8] = topicName;
         TopicCommand.TopicCommandOptions opts = new TopicCommand.TopicCommandOptions(arguments);
 
-        ZkUtils zkUtils = ZkUtils.apply(opts.options().valueOf(opts.zkConnectOpt()),
-                30000, 30000, JaasUtils.isZkSecurityEnabled());
+        KafkaZkClient zkClient = KafkaZkClient.apply(this.zookeeperString,
+          JaasUtils.isZkSecurityEnabled(), 30000, 30000, Integer.MAX_VALUE, Time.SYSTEM,
+          "kafka.server", "SessionExpireListener");
         try{
             // run
             LOGGER.info("Executing: CreateTopic " + Arrays.toString(arguments));
-            TopicCommand.createTopic(zkUtils, opts);
+            TopicCommand.createTopic(zkClient, opts);
         } finally {
-            zkUtils.close();
+            zkClient.close();
         }
 
     }
@@ -217,8 +220,9 @@ public class KafkaUnit {
         arguments[2] = "--list";
         TopicCommand.TopicCommandOptions opts = new TopicCommand.TopicCommandOptions(arguments);
 
-        ZkUtils zkUtils = ZkUtils.apply(opts.options().valueOf(opts.zkConnectOpt()),
-                30000, 30000, JaasUtils.isZkSecurityEnabled());
+        KafkaZkClient zkClient = KafkaZkClient.apply(this.zookeeperString,
+            JaasUtils.isZkSecurityEnabled(), 30000, 30000, Integer.MAX_VALUE, Time.SYSTEM,
+            "kafka.server", "SessionExpireListener");
         final List<String> topics = new ArrayList<>();
         try {
             // run
@@ -235,12 +239,12 @@ public class KafkaUnit {
                         }
                     }
                 });
-                TopicCommand.listTopics(zkUtils, opts);
+                TopicCommand.listTopics(zkClient, opts);
             } finally {
                 Console.setOut(oldOut);
             }
         } finally {
-            zkUtils.close();
+            zkClient.close();
         }
 
         return topics;
@@ -271,14 +275,15 @@ public class KafkaUnit {
         arguments[4] = topicName;
         TopicCommand.TopicCommandOptions opts = new TopicCommand.TopicCommandOptions(arguments);
 
-        ZkUtils zkUtils = ZkUtils.apply(opts.options().valueOf(opts.zkConnectOpt()),
-                30000, 30000, JaasUtils.isZkSecurityEnabled());
+        KafkaZkClient zkClient = KafkaZkClient.apply(this.zookeeperString,
+          JaasUtils.isZkSecurityEnabled(), 30000, 30000, Integer.MAX_VALUE, Time.SYSTEM,
+          "kafka.server", "SessionExpireListener");
         try {
             // run
             LOGGER.info("Executing: DeleteTopic " + Arrays.toString(arguments));
-            TopicCommand.deleteTopic(zkUtils, opts);
+            TopicCommand.deleteTopic(zkClient, opts);
         } finally {
-            zkUtils.close();
+            zkClient.close();
         }
     }
 
