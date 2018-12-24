@@ -312,6 +312,7 @@ public class KafkaUnit {
         props.put("bootstrap.servers", brokerString);
         props.put("group.id", "test");
         props.put("enable.auto.commit", "true");
+        props.put("auto.offset.reset", "latest");
         props.put("auto.commit.interval.ms", "1000");
         props.put("session.timeout.ms", "30000");
         props.put("key.deserializer", StringDeserializer.class.getName());
@@ -319,8 +320,6 @@ public class KafkaUnit {
         props.put("max.poll.records", String.valueOf(maxPoll));
         try (final KafkaConsumer<String, String> kafkaConsumer = new KafkaConsumer<>(props)) {
             kafkaConsumer.subscribe(Collections.singletonList(topicName));
-            kafkaConsumer.poll(0); // dummy poll
-            kafkaConsumer.seekToBeginning(Collections.singletonList(new TopicPartition(topicName, 0)));
             final ConsumerRecords<String, String> records = kafkaConsumer.poll(1000);
             final List<T> messages = new ArrayList<>();
             for (ConsumerRecord<String, String> record : records) {
